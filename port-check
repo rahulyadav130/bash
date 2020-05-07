@@ -1,0 +1,63 @@
+#!/bin/bash
+echo "Create a file name as hostip"
+ls -l hostip > /dev/null > /dev/null
+if [[ $? -ne 0 ]];then
+	echo "File Not available"
+	sleep 3
+	exit 1
+else
+echo "We will monitor HTTP,RDP,SSH port"
+sleep 5
+rm -rvf ssh_opened http_opened  rdp_http rdp_opened http IP_Not_reachable http_opened IP_Working > /dev/null
+hostip=$(<hostip)
+ssh_port=22
+rdp_port=3389
+http_port=80
+echo "checking SSH port ........................................................................"
+for i in $hostip
+do
+	nc -z  -w5 $i $ssh_port
+	if [[ $? -eq 0 ]]
+	then
+		echo $i "SSH port working"  >> ssh_opened
+
+	else
+		echo $i >> rdp_http
+
+	fi
+done;
+rdp_http=$(<rdp_http)
+#Now lets check Remote details port (3389)
+echo "checking RDP port ........................................................................"
+
+for rdp in $rdp_http
+do
+	#echo $rdp
+	nc -z -w5 $rdp $rdp_port
+	if [[ $? -eq 0 ]]
+	then
+		echo $rdp "RDP port working" >> rdp_opened
+
+	else
+		echo $rdp >> http
+	fi
+done;
+# now lets check port HTTP (80)
+echo "checking http port ........................................................................"
+httpip=$(<http)
+for http in $httpip
+do
+	nc -z -w5 $http $http_port
+	if [[ $? -eq 0 ]]
+	then
+		echo $http "Http port working" >> http_opened
+	else
+		echo $http >> IP_Not_reachable
+	fi
+done;
+s=$(<ssh_opened)
+r=$(<rdp_opened)
+h=$(<http_opened)
+echo $s $r $h > IP_Working
+echo "Done! scripts cretaed files namae as ssh_opened, rdp_opened, http_opened............."
+fi
