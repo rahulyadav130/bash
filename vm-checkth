@@ -1,0 +1,40 @@
+#!/bin/bash
+echo "Prerequisite---"
+echo "Create a file name as pass and put VM ssh password in file to avoid password print in shell"
+sleep 5
+check_pass_file=$(ls pass)
+if [[ $? != 0 ]]
+then
+        echo "pass file not available.."
+        exit 1
+else
+echo " pass file is available now...."
+sleep 4
+host_ip=$(<host_ip)
+rm -rvf vm_health.csv
+echo ""
+spc='echo "|"'
+hostname_info='hostname'
+vm_ip='hostname -I'
+release="cat /etc/redhat-release | cut -d '(' -f1"
+Kernel="hostnamectl | grep Kernel | awk '{print \$3}'"
+disk="df -h | grep root | awk {'print \$5'}"
+t_ram="free -m | grep Mem | awk '{print \$2}'"
+cpu="lscpu | grep -w 'CPU(s)' | head -1 | awk '{print \$2}'"
+mem="free -m | grep Mem | awk '{print \$3}'"
+uptime_info='uptime  -s'
+vm_load="w |head -1|  cut -d ':' -f5 --output-delimiter=' '"
+#print ( Now let check NTPservices, It will check sync status of NTP)
+ntp_status="ntpstat | head -1 | awk '{print \$1}'"
+#echo $root_disk
+echo "HostName|VM_IP|Release|Kernel |Uptime | Root_Used% | CPU | Total_RAM | RAM_USED | VM_load | NTP_Sync"
+for host_ip in $host_ip;
+do
+vm_health=`sshpass -f pass  ssh -o StrictHostKeyChecking=no  root@$host_ip "$hostname_info && $spc && $vm_ip && $spc && $release  && $spc && $Kernel  && $spc && $uptime_info && $spc && $disk && $spc && $cpu && $spc &&$t_ram && $spc && $mem && $spc && $vm_load"`
+ntp_sts=`sshpass -f pass  ssh -o StrictHostKeyChecking=no  root@$host_ip  $ntp_status`
+echo  $vm_health echo "|" $ntp_sts
+echo  $vm_health echo "|" $ntp_sts  >> vm_health.csv
+done;
+fi
+echo "..........................................................................................."
+echo "Output file vm_health.csv created. " you may copy from shell and paste into excel""
